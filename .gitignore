@@ -1,0 +1,64 @@
+# Python virtual environments
+.env/
+venv/
+.venv/
+
+# Python cache and artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Django local artifacts
+backend/db.sqlite3
+backend/*.sqlite3
+backend/staticfiles/
+backend/media/
+
+# Flutter and Dart build artifacts
+frontend/.dart_tool/
+frontend/build/
+frontend/.packages
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.pub-cache/
+frontend/.pub/
+frontend/flutter_*.png
+frontend/coverage/
+frontend/**/Generated.xcconfig
+frontend/**/flutter_export_environment.sh
+frontend/**/ephemeral/
+frontend/**/Flutter.podspec
+frontend/**/Pods/
+frontend/**/.symlinks/
+frontend/**/GeneratedPluginRegistrant.*
+
+# Android build output
+frontend/android/.gradle/
+frontend/android/app/build/
+frontend/android/build/
+
+# iOS/macOS local and build files
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/ephemeral/
+frontend/macos/Pods/
+frontend/macos/Flutter/ephemeral/
+
+# Linux/Windows generated build output
+frontend/linux/flutter/ephemeral/
+frontend/windows/flutter/ephemeral/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db

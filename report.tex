@@ -1,0 +1,187 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{float}
+
+\title{Network Security Scanner \& Firewall Visualizer\\\large Implementation and Testing Report}
+\author{Fahad}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Abstract}
+This report presents the implementation of a Network Security Scanner and Firewall Visualizer using a Django backend and a Flutter frontend. The scanner supports TCP SYN, UDP, and Full Connect scans with live progress updates. The firewall component supports rule chaining with priorities and traffic simulation. The work was tested locally using the project environment and practical API checks. The report focuses on what was implemented, what was verified, and how the current behavior should be interpreted.
+
+\section{Project Scope and Requirement Mapping}
+\textbf{Project Title:} Network Security Scanner \& Firewall Visualizer
+
+\textbf{Given Goal:} Build a desktop or web tool to scan IP/host targets and simulate firewall rule impact on traffic.
+
+\begin{longtable}{p{0.28\linewidth} p{0.32\linewidth} p{0.32\linewidth}}
+\toprule
+\textbf{Requirement} & \textbf{Implemented} & \textbf{Status} \\
+\midrule
+Target IP/hostname input & Flutter form field in scanner panel & Completed \\
+Scan type dropdown (TCP SYN, UDP, Full Connect) & Flutter dropdown integrated with backend API payload & Completed \\
+Start scan and result table (IP, port, service, status) & Live polling UI with incremental rows & Completed \\
+Firewall rule creation (allow/deny, IP, port, protocol, priority) & CRUD endpoints and frontend rule table & Completed \\
+Traffic flow visualization & Simulation summary cards + decision table + diagram & Completed \\
+Use Nmap/Scapy style scanning backend & Python backend with python-nmap and socket fallback for Full Connect & Completed \\
+Parse scan output and present readable results & JSON results with status and verified service field & Completed \\
+Rule chaining and priority logic & First-match rule chain with default deny & Completed \\
+\bottomrule
+\end{longtable}
+
+\section{Technical Implementation}
+\subsection{Backend}
+The backend is implemented in Django using \textbf{function-based views} and manual JSON validation. Serializers and class-based DRF views are not used.
+
+Key endpoints:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{GET /api/health/}
+  \item \texttt{POST /api/scan/start/}
+  \item \texttt{GET /api/scan/jobs/\{job\_id\}/}
+  \item \texttt{GET/POST /api/firewall/rules/}
+  \item \texttt{DELETE /api/firewall/rules/\{id\}/}
+  \item \texttt{POST /api/firewall/simulate/}
+\end{itemize}
+
+Live scan jobs are managed by background threads with statuses \texttt{queued}, \texttt{running}, \texttt{completed}, and \texttt{failed}. Progress is exposed as scanned ports over total ports.
+
+\subsection{Frontend}
+The frontend is implemented in Flutter with Dio for HTTP communication. The scan page starts a job and polls every 900ms for updates. This provides live progress bars, live job status chips, and incremental result rows.
+
+\subsection{Service Name Policy (No Guessing)}
+The current implementation uses strict service reporting:
+\begin{itemize}[leftmargin=*]
+  \item If Nmap service probe confirms a service with sufficient confidence, that value is shown.
+  \item If service cannot be verified, the value is \texttt{unknown}.
+  \item The UI label uses \texttt{Verified Service} to reflect this behavior.
+\end{itemize}
+
+This avoids fake or guessed service names.
+
+\subsection{Firewall Simulation Logic}
+Firewall rules are evaluated by priority (lowest number first). The first matching rule decides \texttt{allow} or \texttt{deny}. If no rule matches, default decision is deny.
+
+Important behavior:
+\begin{itemize}[leftmargin=*]
+  \item Scan result status and firewall simulation decision are different layers.
+  \item A port can scan as \texttt{open} but still be shown as \texttt{deny} in simulation.
+  \item Non-open scan statuses (filtered, open|filtered, closed, unknown) are treated as blocked in simulation.
+\end{itemize}
+
+\section{Local Testing Summary}
+Testing was completed locally using the existing \texttt{.env} environment.
+
+\subsection{Framework and Static Checks}
+\begin{itemize}[leftmargin=*]
+  \item Django: \texttt{python manage.py check} \textrightarrow{} no issues.
+  \item Flutter: \texttt{flutter analyze} \textrightarrow{} no issues.
+  \item Flutter tests: \texttt{flutter test} \textrightarrow{} all tests passed.
+\end{itemize}
+
+\subsection{Live Scan API Smoke Test}
+A Full Connect test on local port 8000 returned:
+\begin{itemize}[leftmargin=*]
+  \item job creation with HTTP 202,
+  \item final job status \texttt{completed},
+  \item engine reported as \texttt{nmap},
+  \item scan status for port 8000 as \texttt{open},
+  \item verified service as \texttt{unknown} (not guessed).
+\end{itemize}
+
+\subsection{Firewall Simulation API Smoke Test}
+Traffic simulation with statuses \texttt{open|filtered}, \texttt{filtered}, and \texttt{open} returned blocked outcomes for non-open statuses, and rule-based evaluation for open status.
+
+\section{Interpretation of Results}
+If a deny-all rule exists, it does not change whether the scanner can technically connect to the target host during scan execution. It changes the simulated policy decision in the visualization module.
+
+Therefore, seeing \texttt{open} in scan results and \texttt{deny} in traffic simulation is consistent with this architecture.
+
+\section{Git and Repository Setup}
+Repository was initialized locally and connected to:
+\begin{itemize}[leftmargin=*]
+  \item Remote URL: \texttt{git@github.com:FahadIzMe/IS\_3.git}
+  \item Remote name: \texttt{is\_3\_repo\_remote} (not \texttt{origin})
+\end{itemize}
+
+A project-level \texttt{.gitignore} was added to exclude environment folders and build artifacts while keeping source code and configuration files.
+
+\section{Screenshot Placement Guide}
+Create a folder named \texttt{screenshots/} beside this report file and paste the screenshots with the exact names below.
+
+\subsection*{Figure 1: Dashboard Loaded}
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Paste screenshot: \texttt{screenshots/01-dashboard-overview.png}\\
+Show full page with scanner panel, firewall rule panel, and traffic visualization panel.}}
+\caption{Application dashboard after startup.}
+\end{figure}
+
+\subsection*{Figure 2: Live Scan Running}
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Paste screenshot: \texttt{screenshots/02-live-scan-running.png}\\
+Show job ID, running status, progress bar, and increasing scanned port count.}}
+\caption{Live scan monitoring in progress.}
+\end{figure}
+
+\subsection*{Figure 3: Live Scan Completed}
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Paste screenshot: \texttt{screenshots/03-live-scan-complete.png}\\
+Show completed state with result rows including status and Verified Service column.}}
+\caption{Completed scan result table.}
+\end{figure}
+
+\subsection*{Figure 4: Firewall Rules with Priority Chain}
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Paste screenshot: \texttt{screenshots/04-firewall-rules-chain.png}\\
+Show at least one allow rule and one deny-all rule with priorities.}}
+\caption{Firewall rule chain configuration.}
+\end{figure}
+
+\subsection*{Figure 5: Simulation Result with Denied Traffic}
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Paste screenshot: \texttt{screenshots/05-simulation-deny-results.png}\\
+Show summary cards and flow table where decision is deny.}}
+\caption{Traffic flow simulation decisions.}
+\end{figure}
+
+\subsection*{Figure 6: Filtered/Open-Filtered Forced Block}
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Paste screenshot: \texttt{screenshots/06-filtered-blocked.png}\\
+Show flow table row where scan status is filtered or open|filtered and decision is deny.}}
+\caption{Policy treatment of uncertain scan statuses.}
+\end{figure}
+
+\subsection*{Figure 7: Backend Health Check/Server Running}
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Paste screenshot: \texttt{screenshots/07-backend-server.png}\\
+Show terminal with Django runserver process and host/port.}}
+\caption{Backend service runtime status.}
+\end{figure}
+
+\subsection*{Figure 8: Local Validation Commands}
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\linewidth}{\centering Paste screenshot: \texttt{screenshots/08-validation-commands.png}\\
+Show successful outputs for \texttt{manage.py check}, \texttt{flutter analyze}, and \texttt{flutter test}.}}
+\caption{Verification outputs used in this report.}
+\end{figure}
+
+\section{Conclusion}
+The project meets the requested core features: live network scanning, readable scan outputs, firewall rule chaining, and traffic flow simulation. The implementation was verified locally and adjusted to avoid guessed service values. The current outputs are consistent with the architecture: scan connectivity is measured first, while rule impact is shown in a separate simulation layer.
+
+\end{document}
