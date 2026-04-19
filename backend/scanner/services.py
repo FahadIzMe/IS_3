@@ -89,8 +89,8 @@ def create_nmap_scanner() -> nmap.PortScanner | None:
 
 def _nmap_service_scan_arguments(protocol: str) -> str:
     if protocol == "udp":
-        return "-sU -sV -Pn -n"
-    return "-sT -sV -Pn -n"
+        return "-sU -sV -Pn -n --max-retries 0 --host-timeout 2s --version-intensity 2"
+    return "-sT -sV -Pn -n --max-retries 0 --host-timeout 2s --version-intensity 2"
 
 
 def _actual_service_from_nmap_details(details: dict) -> str:
@@ -208,20 +208,11 @@ def scan_single_port_with_nmap(
 
             details = protocol_data[port]
             status = details.get("state", "unknown")
-            service = "unknown"
-            if status in {"open", "open|filtered"}:
-                service = _detect_service_with_nmap(
-                    scanner=scanner,
-                    target_ip=target_ip,
-                    port=port,
-                    protocol=protocol,
-                )
-
             return True, ScanResult(
                 ip=host,
                 port=port,
                 protocol=protocol,
-                service=service,
+                service="unknown",
                 status=status,
             )
 
@@ -231,6 +222,19 @@ def scan_single_port_with_nmap(
         protocol=base_protocol,
         service="unknown",
         status="unknown",
+    )
+
+
+def resolve_verified_service(target_ip: str, port: int, protocol: str) -> str:
+    scanner = create_nmap_scanner()
+    if scanner is None:
+        return "unknown"
+
+    return _detect_service_with_nmap(
+        scanner=scanner,
+        target_ip=target_ip,
+        port=port,
+        protocol=protocol,
     )
 
 
